@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="prodectjson" format="json">
+      <types:shape format="weave" example="product.json"><![CDATA[%dw 2.0
+
+type prodectjson = {|
+  productId: Number {"typeId": "int"}, 
+  name: String, 
+  description: String, 
+  originalPrice: Number {"typeId": "int"}, 
+  offer: {|
+    discountPercentage: Number {"typeId": "int"}, 
+    offerValidUntil: String
+  |}, 
+  brandName: String, 
+  images: Array<String>
+|} {"example": "{\\\"productId\\\":1,\\\"name\\\":\\\"Hp Pavilion laptop\\\",\\\"description\\\":\\\"Hp Laptop \\\",\\\"originalPrice\\\":1000,\\\"offer\\\":{\\\"discountPercentage\\\":25,\\\"offerValidUntil\\\":\\\"2019-06-29\\\"},\\\"brandName\\\":\\\"HP\\\",\\\"images\\\":[\\\"image1.jpeg\\\",\\\"image2.jpeg\\\",\\\"image3.jpeg\\\"]}"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="products" format="xml">
+      <types:example format="xml" element="{http://way2learnonline.com/domain}products" location="products.xml"/>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#09ecade1-e9c0-45a6-bb94-2de0dc21e98b">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="prodectjson"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#a6b9c632-3afd-40cc-8dac-9bb6a8dadf90">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="products"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

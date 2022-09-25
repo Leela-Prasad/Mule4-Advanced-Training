@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="063d8439-d079-46b8-a53f-8afdba7869b7" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="tryfailFlow" doc:id="42c6359d-933c-4290-b573-9781edac298b" >
+		<http:listener doc:name="Listener" doc:id="454877aa-8b84-4d13-8f8a-e793eb13b740" config-ref="HTTP_Listener_config" path="/test"/>
+		<ee:transform doc:name="Transform Message" doc:id="d95fae5a-7772-49f8-9068-f6e2b30ccc79" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import try,fail from dw::Runtime
+
+output application/dw
+
+fun readFile(fileName) = do {
+	var fileContent = try(() -> readUrl("classpath://" ++ fileName, "application/xml"))
+	---
+	fileContent match {
+		case content if(content.success == false) -> 
+							try(() -> readUrl("classpath://states.xml", "application/xml")) match {
+															case tt if(tt.success == false) -> fail("Exception Occurred")
+															else tt -> tt.result	
+														}		
+		
+		else content -> content.result
+	}
+}
+---
+readFile(attributes.queryParams.fileName)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="bf1b1de0-da0d-4452-b203-8a290736cd2c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import try,fail from dw::Runtime
+
+output application/dw
+
+fun readFile(fileName) = do {
+	var fileContent = try(() -> readUrl("classpath://" ++ fileName, "application/xml"))
+	---
+	if(fileContent.success == false)  "Exception Occurred"
+	else
+		fileContent.result
+}
+---
+readFile('cities.xml')]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

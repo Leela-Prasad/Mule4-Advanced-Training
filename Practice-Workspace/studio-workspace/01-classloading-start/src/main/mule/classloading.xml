@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ef500df6-7295-41b2-935e-6894ec2e7fb6" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<import doc:name="Import" doc:id="dbbaf8b6-456a-4e40-bc00-be8033389ff9" file="sharedflowsapp.xml" />
+	<flow name="classloadingFlow" doc:id="e3352327-ee5f-4b7b-b038-09e0ec60d83a" >
+		<http:listener doc:name="Listener" doc:id="0366e2f5-7e04-4405-b790-e9859aec9731" config-ref="HTTP_Listener_config" path="/loadtest"/>
+		<java:invoke-static doc:name="Invoke static" doc:id="4ca0de0a-7cc3-4fa4-8567-2a7a861a8e85" class="com.way2learnonline.HelloWorld" method="sayHello(java.lang.String)">
+			<java:args ><![CDATA[#[%dw 2.0
+output application/java
+---
+{
+	name: attributes.queryParams.name as String
+}]]]></java:args>
+		</java:invoke-static>
+		<logger level="INFO" doc:name="Logger" doc:id="d8b15107-15b5-4787-a50a-303e069aea8d" message="#['Got  ' ++ payload as String]"/>
+		<flow-ref doc:name="Flow Reference" doc:id="2b7f6f35-8085-48b2-af0b-b2dce8ca130d" name="mysharedflow"/>
+	</flow>
+</mule>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="reduce-exampleFlow" doc:id="8de69fc1-8129-4a8d-bd53-9b857bc05b7e" >
+		<ee:transform doc:name="Transform Message" doc:id="6d49e6e3-c938-4978-b8ec-a0bdb18a1bc1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/dw
+
+var productsXml = readUrl("classpath://products.xml", "application/xml")
+
+var initalAcc = {
+	hp: {price: 0, count: 0},
+	ibm: {price: 0, count: 0},
+	samsung: {price: 0, count: 0},
+	apple: {price: 0, count: 0},
+	motorola: {price: 0, count: 0},
+}
+
+var p = {
+  brandName: "IBM",
+  description: "IBM Laptop",
+  images: {
+    image: "image9.jpeg",
+    image: "image10.jpeg",
+    image: "image11.jpeg"
+  },
+  name: "IBM laptop",
+  offer: {
+    offerPrice: "24000.0",
+    offerValidUntil: "2016-06-29"
+  },
+  originalPrice: "34000.0"
+}
+
+var productKpis = productsXml.products.*product reduce(product, acc=initalAcc) -> 
+acc - lower(product.brandName) ++ (lower(product.brandName)): 
+{price: acc[lower(product.brandName)].price + product.originalPrice, count: acc[lower(product.brandName)].count + 1}
+
+var avgPrices = productKpis mapObject (V,K) -> {
+	(K): V.price/V.count
+}
+---
+productsXml.products.*product map (product) -> product ++ avg: avgPrices[lower(product.brandName)]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

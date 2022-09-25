@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:bti="http://www.mulesoft.org/schema/mule/ee/bti"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/bti http://www.mulesoft.org/schema/mule/ee/bti/current/mule-bti-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<db:config name="muletrainingdb" doc:name="Database Config" doc:id="af6c2ec1-27c7-4871-903c-9adbdc81fbda" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="rps@12345" database="muletrainingdb" useXaTransactions="true"/>
+	</db:config> 
+	<db:config name="db1" doc:name="Database Config" doc:id="4eb14134-b0f0-4e46-9c78-1743da103405" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="rps@12345" database="db1"/>
+	</db:config>
+	<flow name="dbdemoFlow" doc:id="a0e257d9-355f-492f-b9f6-87944f0c132b">
+		<db:listener doc:name="On Table Row" doc:id="ce369344-8dc9-4bd2-849e-ee8cbe8ac538" config-ref="muletrainingdb" watermarkColumn="product_id" idColumn="product_id" transactionalAction="ALWAYS_BEGIN" table="product">
+			<scheduling-strategy>
+				<fixed-frequency frequency="5000"/>
+			</scheduling-strategy>
+		</db:listener>
+		<try doc:name="Try" doc:id="21f87758-cea1-41bb-8000-293aab715091" transactionalAction="ALWAYS_BEGIN">
+			<ee:transform doc:name="Transform Message" doc:id="a0c35e13-0500-4ada-a12c-de656015d650">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+product: {
+	pid: payload.product_id,
+	name: log("Got Name as ",payload.name),
+	brand_name: payload.brand_name,
+	originalPrice: payload.original_price
+}]]></ee:set-payload>
+			</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="bname"><![CDATA[%dw 2.0
+output application/java
+---
+payload.brand_name]]></ee:set-variable>
+				</ee:variables>
+		</ee:transform>
+			<db:insert doc:name="Insert" doc:id="5a86bd3e-9a40-4f40-abb4-ebc94bb245ef" config-ref="db1" target="insertresponse" queryTimeoutUnit="NANOSECONDS" transactionalAction="ALWAYS_JOIN">
+			<db:sql><![CDATA[insert into product(brand_name,offer_price,original_price) values(:bname,:offerPrice,:originalPrice)]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	bname: payload.product.brand_name,
+	offerPrice: payload.product.originalPrice,
+	originalPrice: payload.product.originalPrice,
+}]]]></db:input-parameters>
+		</db:insert>
+			<db:insert doc:name="Insert" doc:id="a5736e3c-31b2-4202-9fa3-361ad9ead688" config-ref="db1">
+				<db:sql>insert into copyproduct(brand_name,offer_price,original_price) values(:bname,:offerPrice,:originalPrice)</db:sql>
+				<db:input-parameters><![CDATA[#[{
+	bname: payload.product.brand_name,
+	offerPrice: payload.product.originalPrice,
+	originalPrice: payload.product.originalPrice,
+}]]]></db:input-parameters>
+			</db:insert>
+			<ee:transform doc:name="Transform Message" doc:id="a45bc8f4-b7ba-4962-9787-f65c55c1890c">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+if(vars.bname=='Samsung')
+ dw::Runtime::fail("We dont Accept Samsung")
+else 
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="99b007d6-57ee-47a1-9921-fb9e9c1f1c7f" message="Inserted a row!!" />
+		</try>
+	</flow>
+</mule>

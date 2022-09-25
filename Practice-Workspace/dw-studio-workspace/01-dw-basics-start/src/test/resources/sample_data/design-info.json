@@ -1,0 +1,14 @@
+{
+  "sampleData": {
+    "6276be9d-1a86-4205-8184-9307c2e5fa18": {
+      "attributes": "sample_data/httprequestattributes.dwl"
+    },
+    "a6b9c632-3afd-40cc-8dac-9bb6a8dadf90": {
+      "payload": "sample_data/products.xml",
+      "attributes": "sample_data/json_1.json"
+    },
+    "09ecade1-e9c0-45a6-bb94-2de0dc21e98b": {
+      "payload": "sample_data/json.json"
+    }
+  }
+}

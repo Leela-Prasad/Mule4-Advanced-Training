@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="joining-datasetFlow" doc:id="e6859c55-ecae-47de-8e63-f583aace4682" >
+		<ee:transform doc:name="Transform Message" doc:id="fc4f9a31-ca85-4b75-962c-757003f59ce8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/dw
+
+var citiesXml = readUrl("classpath://cities.xml", "application/xml")
+var statesXml = readUrl("classpath://states.xml", "application/xml")
+
+fun getStateByName(stateName) = 
+statesXml.states.*state.@[?($.name == stateName)][0]
+
+var joinedCities = citiesXml.cities.*city map {
+	city: {
+		cityName: $.city_name,
+		state: sortObjectByKeys(getStateByName($.state_name)) 
+				-- ["time-zone-1", "square-miles"]
+	}
+	
+}
+
+
+fun sortObjectByKeys(obj) = do {
+	var sortedKeys = (obj pluck (V, K, I) -> K) orderBy $
+	var x = sortedKeys map (key) -> {
+		(key): obj[key]
+	}
+	---
+	{
+		(x)
+	}
+}
+---
+cities: {
+	(joinedCities)
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

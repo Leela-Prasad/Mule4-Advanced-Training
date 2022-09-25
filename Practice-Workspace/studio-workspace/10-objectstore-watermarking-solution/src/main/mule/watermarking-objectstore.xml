@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="52bef0f5-8b47-46fe-9f62-57cf5bdcbabe" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="rps@12345" database="muletrainingdb" />
+	</db:config>
+	
+	
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="e8384e6d-8814-4bb6-ab50-e829ff62d8f1" />
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="5647cc71-c299-4d40-a703-21941be7228c" keyGenerationExpression="#[vars.mykey]" />
+	<flow name="02-watermarking-using-objectstore-solutionFlow" doc:id="960328ee-3f54-4dcc-a92a-eb25f6894a3c" >
+		<scheduler doc:name="Scheduler" doc:id="3475bc3c-820e-4eae-87d1-e70943381cdd" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="5000"/>
+			</scheduling-strategy>
+		</scheduler>
+		<os:retrieve doc:name="Retrieve" doc:id="099418ff-d264-49d0-8535-4818babfbaa3" key="lastproductid" target="lastproductid" objectStore="Object_store">
+			<os:default-value ><![CDATA[0]]></os:default-value>
+		</os:retrieve>
+		<logger level="INFO" doc:name="Logger" doc:id="242440e1-b4a2-48ba-b4db-fdca34442d24" message="After Retriving #[vars.lastproductid]"/>
+		<db:select doc:name="Select" doc:id="3d160123-bc7c-4590-bb5d-1490db225c36" config-ref="Database_Config">
+			<db:sql>select * from product where 	product_id &gt; :lastproductid</db:sql>
+			<db:input-parameters><![CDATA[#[%dw 2.0
+output application/java
+---
+{
+	lastproductid: vars.lastproductid as String
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="f42e718b-278a-459b-a65c-ae7ab3527fc9">
+			<when expression="#[not isEmpty(payload)]">
+				<ee:transform doc:name="Transform Message" doc:id="f25f9746-42b7-4605-a4c1-4f51499a0d11">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="14f97219-2008-44ae-9b74-c1b84b7cdc26" message="Got #[max(payload.product_id)]" />
+				<os:store doc:name="Store" doc:id="18595ba1-0b8a-4839-b86e-1ea84b283b67" key="lastproductid" objectStore="Object_store">
+					<os:value><![CDATA[#[max(payload.product_id)]]]></os:value>
+				</os:store>
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Logger" doc:id="280d2254-63c2-496f-978b-4ed030cb01cc" message="No New Records" />
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

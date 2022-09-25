@@ -1,0 +1,34 @@
+
+%dw 2.0
+output application/java 
+---
+{
+  listenerPath : "eiusmod",
+  rawRequestPath : "vitae",
+  relativePath : "modi",
+  maskedRequestPath : "exercitation",
+  version : "quam",
+  scheme : "tempor",
+  method : "aliqua.",
+  requestUri : "pariatur.",
+  rawRequestUri : "nisi",
+  queryString : "vitae",
+  localAddress : "Scaramento St 53",
+  remoteAddress : "reprehenderit",
+  clientCertificate : {
+    encoded : "\"qui\" as Binary",
+    publicKey : {
+    },
+    "type" : "ipsa",
+  },
+  queryParams : {
+    '' : "et",
+  },
+  uriParams : {
+    '' : "pariatur?",
+  },
+  requestPath : "dolore",
+  headers : {
+    '' : "nesciunt.",
+  },
+}

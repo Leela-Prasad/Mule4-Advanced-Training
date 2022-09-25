@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ca698653-d472-440d-af0a-7e3b4042d85f" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="testFlow" doc:id="239cf362-cfcf-4056-804d-99083fa8679e" >
+		<http:listener doc:name="Listener" doc:id="736573fb-141e-49fe-9def-b5adb0daf192" config-ref="HTTP_Listener_config" path="/test"/>
+		<ee:transform doc:name="Transform Message" doc:id="97bafc2a-4158-428f-9b9c-43a9974da10a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+[
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+	41, 42, 43, 44, 45, 46, 47, 48, 49, 50
+]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="testBatch_Job" doc:id="3a529a38-0487-4ff4-93c6-f8cf23c50578" blockSize="20" maxFailedRecords="10" maxConcurrency="50">
+			<batch:process-records >
+				<batch:step name="Step1" doc:id="baf6a166-302e-4c7b-b1a4-ff9d9566dc5e" >
+					<set-variable value="#[payload * 10]" doc:name="Set Variable" doc:id="92cedfe5-8017-417f-ac63-9de66dbb7df2" variableName="x" />
+					<logger level="INFO" doc:name="Logger" doc:id="292f4ba2-bd40-4a84-9784-3e303145626d" message="In Step1 ::  #[payload]  X:: #[vars.x]"/>
+					<ee:transform doc:name="Transform Message" doc:id="2677b73c-8f95-40e5-b34a-0e1394493843" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+if(payload == 4)
+  dw::Runtime::fail('Test Exception')
+ else
+   payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</batch:step>
+				<batch:step name="Step2" doc:id="7aa824bd-6465-41ce-ac00-f55e2087f06f" acceptExpression="#[mod(payload,2) == 0]">
+					<logger level="INFO" doc:name="Logger" doc:id="384c3637-cbea-40e8-9e99-0e7ade30bd57" message="In Step2 ::  #[payload]  X:: #[vars.x]"/>
+				</batch:step>
+				<batch:step name="Batch_Step" doc:id="c60eccec-6416-47d5-a1b4-f234734e5fd3" acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Logger" doc:id="097f65ed-a3cd-4c77-823c-0f55ead920e9" message="In Step3 ::  #[payload]  X:: #[vars.x]"/>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<ee:transform doc:name="Transform Message" doc:id="1dfea6a2-3f8a-43b1-9cf5-0d3479e57915" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="4b90eb9c-29de-4986-a576-3818df89c012" >
+		<http:listener-connection protocol="HTTPS" host="0.0.0.0" port="8081" >
+			<tls:context >
+				<tls:trust-store path="servertruststore.jks" password="password" type="jks" insecure="true" />
+				<tls:key-store type="jks" path="serverkeystore.jks" alias="localhost" keyPassword="password" password="password" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<flow name="serverhttpsFlow" doc:id="05a7c004-c11a-4fdf-b881-55003d6862a6" >
+		<http:listener doc:name="Listener" doc:id="4b387113-a25a-4970-bd2a-2f1afa633968" config-ref="HTTP_Listener_config" path="/server/test"/>
+		<ee:transform doc:name="Transform Message" doc:id="8a638fed-e5bc-4777-96e4-90cbad5a396d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: 'Hello From Server'
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

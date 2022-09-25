@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="objectconstructionFlow" doc:id="d678a1bc-df6b-4c3e-a1bd-8a3d4c8e6d90" >
+		<ee:transform doc:name="Transform Message" doc:id="09ecade1-e9c0-45a6-bb94-2de0dc21e98b" >
+			<ee:message >
+				<ee:set-payload resource="dwl/payloads/product.dwl" />
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable resource="dwl/vars/productname.dwl" variableName="productName" />
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="5f518f19-1ac7-4da2-bd6d-dcb8921e1958" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/dw
+
+var productsXml = readUrl("classpath://products.xml", "application/xml")
+
+var products = productsXml.products.*product
+
+var myns = productsXml.products.#
+
+var pro = {
+  brandName: "HP",
+  description: "Hp Laptop",
+  images: {
+    image: "image1.jpeg",
+    image: "image2.jpeg",
+    image: "image3.jpeg"
+  },
+  name: "Hp Pavilion laptop",
+  offer: {
+    offerPrice: "1000.0",
+    offerValidUntil: "2016-06-29"
+  },
+  originalPrice: "1000.0"
+}
+
+var obj = {firstname: "Leela", lastname: "Prasad"}
+---
+productsXml.products.*product[?($.brandName == 'Apple')]
+
+//readUrl("file://C:\\Users\\Administrator\\Downloads\\dataweavews\\02-using-selectors-solution\\src\\main\\resources\\examples\\products.xml", "application/xml")]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="a6b9c632-3afd-40cc-8dac-9bb6a8dadf90" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/dw
+
+fun getImages(images) = {
+	(images map (image) -> {
+		img: image
+	})
+}
+
+var mappedProducts = payload.products.*product map (product) ->{
+	product: {
+		productId: product.@productId,
+		name: product.name,
+		brandName: product.brandName,
+		offerValidUntil: product.offer.offerValidUntil as Date,
+		originalPrice: product.originalPrice as Number,
+		(images: getImages(product.images.*image)) if(product.images?)
+		
+		}
+		
+}
+
+var sortedProducts = mappedProducts orderBy (product) -> product.product.originalPrice
+
+//var filteredProducts = sortedProducts filter (product) -> product.product.brandName == attributes.queryParams.brand
+var filteredProducts = sortedProducts filter (product) -> product.product.brandName == 'Apple'
+var product = {
+      productId: "1",
+      name: "Hp Pavilion laptop",
+      brandName: "HP",
+      originalPrice: 1000.0,
+      offerValidUntil: |2016-06-29|,
+      images: {
+        image: "image1.jpeg",
+        image: "image2.jpeg",
+        image: "image3.jpeg"
+      }
+    }
+    
+fun convertKeytToUpper(obj) = 
+	if(typeOf(obj) == Object)
+		obj mapObject (V,K,I) -> {
+			(upper(K)): convertKeytToUpper(V)
+		}
+	else if(typeOf(obj) == Date)
+	  obj as String {format: "yyyy-MMM-dd"}
+	else if(typeOf(obj) == Number)
+	  obj as String {format: "#,###.##"}
+	else
+	obj
+	
+fun convertKeyToUpperUsingMatch(obj) =
+   obj match {
+   	 case is Date ->  obj as String {format: 'yyyy-MMM-dd'}
+   	 case is Number -> obj as String {format: "#,###.##"}
+   	 case is Object -> obj mapObject (V,K,I) -> {
+			(upper(K)): convertKeyToUpperUsingMatch(V)
+		}
+	else -> obj
+   }	
+---
+
+convertKeyToUpperUsingMatch(product)
+//products: {
+//	(mappedProducts)
+//}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

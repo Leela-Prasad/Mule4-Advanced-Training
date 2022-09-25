@@ -1,0 +1,43 @@
+What is a Certificate
+Certificate contains Personal Informatoin like Name, OrgUnit, Org Name, City, State etc
+and a Public Key
+
+Generally during ssl handshake this certificate is exchanged and public key is used during the process.
+
+This Certificate is Signed by Certificate Authority with CA Private Key.
+
+
+How to ensure that this certificate is not tampered during the exchane that happened via Network 
+This is what we call as Integrity
+
+To ensure Integrity this certificate is signed using 
+certificate digest which is encrypted with CA Private Key.
+
+Digest is hashing using digest algorithms like MD5.
+
+so while signing, first certificate digest is computed and this digest value is encrypted with CA Private Key.
+So if someone wants to tamper this certificate they can decrypt using CA Public Key but cannot modify certificate as modification will result in new digest value and they cannot encrypt new digest value as they will not have CA private key.
+
+
+During the handshake
+client will get the public certificate of server.
+This Certificate cannot be tampered because of above reason.
+Client will generate a RANDOM SESSION KEY(RSK)(This is the Symmetric Key) and encrypt with Server Public Key.
+since no one including Client is having server private key no can decrypt and see the RANDOM SESSION KEY.
+After the exchange both client and server will have RANDOM SESSION KEY.
+Client generates, so it will have RSK
+Sever decrypt using private key and will have RSK.
+
+Now the content is encrypted using this RANDOM SESSION KEY and no one can decrypt except server.
+This is how SSL is Secure.
+
+This process will have 1 Asymmetric and multiple Symmetric encryption/decryption
+
+
+JKS file contain list of records
+each record has alias, private key, certificate, alias password
+
+
+Trust Store contains list of records
+each record has alias, public certificate
+
